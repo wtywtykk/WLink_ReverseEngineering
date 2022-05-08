@@ -1,0 +1,974 @@
+void InitClock_48M()
+{
+}
+void InitUSB()
+{
+	IE_EX.2=0;//IE_USB
+	USB_CTRL=0;
+	UEP2_3_MOD=0xC;//EP2收发，使能单 64 字节接收缓冲区；单 64 字节发送缓冲区
+	UEP4_1_MOD=0xC0;//EP1收发，端点 0 单 64 字节收发共用缓冲区(IN 和 OUT) 
+	UEP0_DMA_H= 0
+	UEP0_DMA_L= 0
+	UEP1_DMA_H= 2
+	UEP1_DMA_L= 0
+	UEP2_DMA_H= 0
+	UEP2_DMA_L= 0xA
+	UEP0_CTRL=2//RESP NAK for IN
+	UEP2_CTRL=0x12//RESP NAK for IN, bUEP_AUTO_TOG
+	UEP1_CTRL=0x12//RESP NAK for IN, bUEP_AUTO_TOG
+	USB_DEV_AD=0
+	UDEV_CTRL=0x80//Disable DP/DM Pull down
+	USB_CTRL=0x29//使能 USB 设备功能，关闭内部上拉(??)，需加外部上拉,使能DMA
+	UDEV_CTRL|=1//使能物理端口
+	USB_INT_FG=0xFF//清中断
+	USB_INT_EN=7//总线挂起或唤醒事件中断；传输完成中断；USB 总线复位事件中断
+}
+
+char XRAM_200;
+char XRAM_201;
+char XRAM_202;
+char XRAM_203;
+
+char XRAM_240;
+char USB_PKT_LEN;
+
+char XRAM_91;
+char XRAM_92_SetupReq;
+
+char XRAM_1A6;
+char XRAM_1A7;
+
+char XRAM_54D;
+
+char RAM_25
+char RAM_26
+char RAM_27
+char RAM_50
+char RAM_58
+char RAM_59
+char RAM_5A
+
+
+char XRAM_52E[7];
+char XRAM_5DA[7];
+char XRAM_532;
+int32 XRAM_1A1;//1,2,3,4
+char* XRAM_1A5;//1A5,6,7
+char XRAM_5DD;
+char XRAM_5DE;
+char XRAM_5DF;
+char XRAM_1CA;
+char XRAM_1CB;
+char XRAM_1CC;
+char XRAM_1CD;
+char XRAM_1CE;
+char XRAM_1CF;
+char XRAM_1D0;
+char XRAM_5E0;
+
+void ROM_CB7()
+{
+mov     R7, #7
+lcall   func_dispatch2
+	memset(XRAM_5DA,0,7);
+	
+	if(USB_DATA_FLAGS2.4)
+	{
+		//ROM_CD1
+		R5=RAM_1CF;
+		R4=0
+		if(RAM_1CF==1)
+			RAM_1CE=RAM_1CE<<1;
+		else if(RAM_1CF==2)
+			RAM_1CE=RAM_1CE<<1 | 1;
+		RAM_1D5=RAM_1CE;
+		RAM_1D6=0;
+		
+		RAM_59=0;
+		do(RAM_59<8)
+		{
+			RAM_1D6^= RAM_1CE;
+			RAM_1CE>>=1;
+			RAM_59++;
+		}
+		
+		P1_MOD_OC |=0x10
+		P1_DIR_PU |=0x10
+		P1_MOD_OC &=0xFD
+		P1_DIR_PU |=0x2
+		
+		if(XRAM_1D5 & 1)
+		{
+			//ROM_D48
+			//8 nops per toggle
+			RAM_1D1=RAM_1CA;
+			RAM_1D2=RAM_1CB;
+			RAM_1D3=RAM_1CC;
+			RAM_1D4=RAM_1CD;
+			
+			RAM_5DA=RAM_1D1;
+			RAM_5DB=RAM_1D2;
+			RAM_5DC=RAM_1D3;
+			RAM_5DD=RAM_1D4;
+			
+			XRAM_1CF=0;
+			
+			RAM_59=0;
+			do(RAM_59<8)
+			{
+				RAM_1CF^= RAM_1CA;
+				RAM_1CA>>=1;
+				RAM_59++;
+			}
+			
+			RAM_59=0;
+			do(RAM_59<8)
+			{
+				RAM_1CF^= RAM_1CB;
+				RAM_1CB>>=1;
+				RAM_59++;
+			}
+			
+			RAM_59=0;
+			do(RAM_59<8)
+			{
+				RAM_1CF^= RAM_1CC;
+				RAM_1CC>>=1;
+				RAM_59++;
+			}
+			
+			RAM_59=0;
+			do(RAM_59<8)
+			{
+				RAM_1CF^= RAM_1CD;
+				RAM_1CD>>=1;
+				RAM_59++;
+			}
+
+			XRAM_1D6 &= 1;
+			if(XRAM_1CF & 1)
+				XRAM_1D6 |=2;
+			P1.1=1;
+			P1.4=1;
+			P1.1=0;
+			P1.4=0;
+			
+			//ROM_E71
+			RAM_59=0;
+			do{
+				RAM_59++;
+				
+				if(XRAM_1D5 & 0x80)
+					P1.1=1
+				else
+					P1.1=0
+				P1.4=1
+				XRAM_1D5 <<=1;
+				P1.4=0
+			}while(RAM_59<8);
+			if(XRAM_1D6 & 1)
+				P1.1=1
+			else
+				P1.1=0
+			P1.4=1
+			P1.4=0
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU &=0xFD
+			P1.4=1
+			P1.4=0
+			P1.1=0
+			P1.4=1
+			RAM_58=P1.1;
+			if(RAM_58)
+				XRAM_5DF=1;
+			else
+				XRAM_5DF=0;
+			P1.4=0
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU &=0xFD
+			P1.4=1
+			P1.4=0
+			P1.1=0
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU |=0x2
+			P1.4=1
+			P1.4=0
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU &=0xFD
+			P1.4=1
+			P1.4=0
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU |=0x2
+			
+			//ROM_F67
+			RAM_59=0;
+			do{
+				RAM_59++;
+				
+				if(XRAM_1D4 & 0x80)
+					P1.1=1
+				else
+					P1.1=0
+				P1.4=1
+				XRAM_1D4 <<=1;
+				P1.4=0
+			}while(RAM_59<8);
+			RAM_59=0;
+			do{
+				RAM_59++;
+				
+				if(XRAM_1D3 & 0x80)
+					P1.1=1
+				else
+					P1.1=0
+				P1.4=1
+				XRAM_1D3 <<=1;
+				P1.4=0
+			}while(RAM_59<8);
+			RAM_59=0;
+			do{
+				RAM_59++;
+				
+				if(XRAM_1D2 & 0x80)
+					P1.1=1
+				else
+					P1.1=0
+				P1.4=1
+				XRAM_1D2 <<=1;
+				P1.4=0
+			}while(RAM_59<8);
+			RAM_59=0;
+			do{
+				RAM_59++;
+				
+				if(XRAM_1D1 & 0x80)
+					P1.1=1
+				else
+					P1.1=0
+				P1.4=1
+				XRAM_1D1 <<=1;
+				P1.4=0
+			}while(RAM_59<8);
+			if(XRAM_1D6 & 2)
+				P1.1=1
+			else
+				P1.1=0
+			P1.4=1
+			P1.4=0
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU &=0xFD
+			P1.4=1
+			P1.4=0
+			P1.1=0
+			P1.4=1
+			RAM_58=P1.1;
+			if(RAM_58)
+				XRAM_5DF=1;
+			else
+				XRAM_5DF=0;
+			P1.4=0
+			//ROM_10A1 GOTO ROM_12F8
+		}
+		else
+		{
+			//ROM_10A4
+			//8 nops per toggle
+			P1.4=1
+			P1.1=1
+			P1.1=0
+			P1.4=0
+			RAM_59=0;
+			do{
+				RAM_59++;
+				
+				if(XRAM_1D5 & 0x80)
+					P1.1=1
+				else
+					P1.1=0
+				P1.4=1
+				XRAM_1D5 <<=1;
+				P1.4=0
+			}while(RAM_59<8);
+			if(XRAM_1D6 & 1)
+				P1.1=1
+			else
+				P1.1=0
+			P1.4=1
+			P1.4=0
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU &=0xFD
+			P1.4=1
+			P1.4=0
+			P1.1=0
+			P1.4=1
+			RAM_58=P1.1;
+			if(RAM_58)
+				XRAM_5DF=1;
+			else
+				XRAM_5DF=0;
+			P1.4=0
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU &=0xFD
+			P1.4=1
+			P1.4=0
+			P1.1=0
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU |=0x2
+			P1.4=1
+			P1.4=0
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU &=0xFD
+			P1.4=1
+			P1.4=0
+			
+			//ROM_11B0
+			RAM_59=0;
+			do{
+				RAM_59++;
+				P1.4=1;
+				XRAM_5DD <<=1;
+				if(P1.1)
+					XRAM_5DD|=1;
+				P1.4=0;
+			}while(RAM_59<8);
+			RAM_59=0;
+			do{
+				RAM_59++;
+				P1.4=1;
+				XRAM_5DC <<=1;
+				if(P1.1)
+					XRAM_5DC|=1;
+				P1.4=0;
+			}while(RAM_59<8);
+			RAM_59=0;
+			do{
+				RAM_59++;
+				P1.4=1;
+				XRAM_5DB <<=1;
+				if(P1.1)
+					XRAM_5DB|=1;
+				P1.4=0;
+			}while(RAM_59<8);
+			RAM_59=0;
+			do{
+				RAM_59++;
+				P1.4=1;
+				XRAM_5DA <<=1;
+				if(P1.1)
+					XRAM_5DA|=1;
+				P1.4=0;
+			}while(RAM_59<8);
+
+			P1.4=1;
+			RAM_58=P1.1;
+			if(RAM_58)
+				XRAM_5DF=1;
+			P1.4=0
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU &=0xFD
+			P1.4=1
+			P1.4=0
+			P1.1=0
+			P1.4=1
+			P1.4=1;
+			RAM_58=P1.1;
+			if(RAM_58)
+				XRAM_5DF=1;
+			else
+				XRAM_5DF=0;
+			P1.4=0
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU &=0xFD
+			P1.4=1
+			P1.4=0
+			P1.1=1
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU |=0x2
+			P1.4=1
+			P1.4=0
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU &=0xFD
+			P1.4=1
+			P1.4=0
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU |=0x2
+			P1.1=0;
+			P1.4=1;
+			P1.1=1;
+			P1_MOD_OC |=0x10
+			P1_DIR_PU |=0x10
+			
+			//ROM_1382 GOTO ROM_12F8
+		}
+	}
+	else
+	{
+		//ROM_1385
+		P1_MOD_OC &=0xFD
+		P1_DIR_PU |=2
+		P1_MOD_OC &=0xEF
+		P1_DIR_PU |=0x10
+		
+		if(USB_DATA_FLAGS3.0)//LowSpeed?
+		{
+			//ROM_1397
+			//20 nops per toggle
+			P1.4=1
+			P1.1=1
+			P1.1=0
+			P1.4=0
+			
+			XRAM_1CE<<=1;
+			RAM_59=0;
+			
+			do{
+				RAM_59++;
+				
+				if(XRAM_1CE & 0x80)
+					P1.1=1
+				else
+					P1.1=0
+				P1.4=1
+				XRAM_1CE <<=1;
+				P1.4=0
+			}while(RAM_59<7);
+			RAM_59=0;
+			do{
+				RAM_59++;
+				
+				if(XRAM_1CD & 0x80)
+					P1.1=1
+				else
+					P1.1=0
+				P1.4=1
+				XRAM_1CD <<=1;
+				P1.4=0
+			}while(RAM_59<8);
+			RAM_59=0;
+			do{
+				RAM_59++;
+				
+				if(XRAM_1CC & 0x80)
+					P1.1=1
+				else
+					P1.1=0
+				P1.4=1
+				XRAM_1CC <<=1;
+				P1.4=0
+			}while(RAM_59<8);
+			RAM_59=0;
+			do{
+				RAM_59++;
+				
+				if(XRAM_1CB & 0x80)
+					P1.1=1
+				else
+					P1.1=0
+				P1.4=1
+				XRAM_1CB <<=1;
+				P1.4=0
+			}while(RAM_59<8);
+			RAM_59=0;
+			do{
+				RAM_59++;
+				
+				if(XRAM_1CA & 0x80)
+					P1.1=1
+				else
+					P1.1=0
+				P1.4=1
+				XRAM_1CA <<=1;
+				P1.4=0
+			}while(RAM_59<8);
+			
+			A=XRAM_1CF;
+			//ROM_15D2 some bit shifting
+			XRAM_1CF=(A & 0x3) << 6
+			if(XRAM_1CF & 0x80)
+				P1.1=1;
+			else
+				P1.1=0;
+			P1.4=1;
+			XRAM_1CF<<=1;
+			P1.4=0;
+			if(XRAM_1CF & 0x80)
+				P1.1=1;
+			else
+				P1.1=0;
+			P1.4=1;
+			XRAM_1CF<<=1;
+			P1.4=0;
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU &=0xFD
+			
+			A=P1.1
+			RAM_58=A;
+			RAM_5A=A & 0x1;
+			P1.4=1;
+			XRAM_5E0+=RAM_5A;
+			P1.4=0;
+			RAM_59=0;
+			
+			do{
+				RAM_59++;
+				A=P1.1
+				RAM_58=A;
+				RAM_5A=A & 0x1;
+				P1.4=1;
+				XRAM_5DE<<=1;
+				XRAM_5DE|=RAM_5A;
+				P1.4=0;
+			}while(RAM_59<7);
+			
+			RAM_59=0;
+			do{
+				RAM_59++;
+				A=P1.1
+				RAM_58=A;
+				RAM_5A=A & 0x1;
+				P1.4=1;
+				XRAM_5DD<<=1;
+				XRAM_5DD|=RAM_5A;
+				P1.4=0;
+			}while(RAM_59<8);
+			
+			RAM_59=0;
+			do{
+				RAM_59++;
+				A=P1.1
+				RAM_58=A;
+				RAM_5A=A & 0x1;
+				P1.4=1;
+				XRAM_5DC<<=1;
+				XRAM_5DC|=RAM_5A;
+				P1.4=0;
+			}while(RAM_59<8);
+			
+			RAM_59=0;
+			do{
+				RAM_59++;
+				A=P1.1
+				RAM_58=A;
+				RAM_5A=A & 0x1;
+				P1.4=1;
+				XRAM_5DB<<=1;
+				XRAM_5DB|=RAM_5A;
+				P1.4=0;
+			}while(RAM_59<8);
+			
+			RAM_59=0;
+			do{
+				RAM_59++;
+				A=P1.1
+				RAM_58=A;
+				RAM_5A=A & 0x1;
+				P1.4=1;
+				XRAM_5DA<<=1;
+				XRAM_5DA|=RAM_5A;
+				P1.4=0;
+			}while(RAM_59<8);
+			
+			A=P1.1
+			RAM_58=A;
+			RAM_5A=A & 0x1;
+			P1.4=1;
+			XRAM_5DF<<=1;
+			XRAM_5DF+=RAM_5A;
+			P1.4=0;
+			
+			A=P1.1
+			RAM_58=A;
+			RAM_5A=A & 0x1;
+			P1.4=1;
+			XRAM_5DF<<=1;
+			XRAM_5DF+=RAM_5A;
+			P1.4=0;
+
+			P1_MOD_OC &=0xFD
+			P1_DIR_PU |=0x2
+			P1.4=1;
+
+			if(RAM_1D0)
+				P1.1=1;
+			else
+				P1.1=0;
+			P1.4=0;
+			P1.1=0;
+			P1.4=1;
+			P1.1=1;
+			
+			//ROM_1BAF JMP TP ROM_1F15
+		}
+		else
+		{
+			//faster version
+			//13 nops per toggle
+		}
+		//ROM_1F15
+		P1_MOD_OC |=0x10
+		P1_DIR_PU |=0x10
+	}
+	
+	//ROM_1F28
+	P1_MOD_OC &=0xFD
+	P1_DIR_PU &=0xFD
+	
+	R3=1;
+	R2=5;
+	R1=0xDA;
+}
+
+void ROM_8033()
+{
+	A+=R2;
+	if(R2==2)
+	{
+		memset(XRAM_52E,0,7);
+		if(XRAM_1A5)
+			*XRAM_1A5=0;
+		if(XRAM_54D!=2)
+		{
+			ROM_BDAB();
+			
+			RAM_50=R7;
+			
+			if(!R7)
+			{
+			}
+			else
+			{
+			
+			}
+		}
+		else
+		{
+			//ROM_8085
+			XRAM_532=4;
+			
+			t=XRAM_1A1 & 0xFFFFFFFC;
+			
+			//------CALLPOINT
+			
+			XRAM_1A1=t;
+			
+			XRAM_52E[0~3]=ROR(XRAM_1A1,8);
+			
+R0, #0xDA
+R4, #5
+R5, #1
+R6, #0
+R7, #7
+			func_dispatch2()
+			
+			if(XRAM_5DF)
+			{
+mov     R6, #0
+mov     R5, #1
+mov     R4, #1
+mov     R3, #1
+mov     R2, #5
+mov     R1, #0x2E
+mov     R0, #0xCA
+
+call ROM_CB7();
+
+
+mov     R0, #0xDA
+mov     R4, #5
+mov     R5, #1
+mov      R6, #0
+mov     R7, #7
+			func_dispatch2()
+			}
+		}
+	}
+	else
+	{
+		//ROM_7FB9
+		A+=R2;
+		A=R6;
+		XRAM_1AB+=0xFFFFFFFF;
+		if(XRAM_1AB<=0)
+			R7=1;
+		else
+		{
+			if(ROM_CD94())
+			{
+				XRAM_1A4++;
+				
+			}
+		}
+	}
+}
+
+char XRAM_C6;//EP2 OUT BUF
+
+//CMD
+//SZ
+
+
+
+u16 XRAM_8F_90;
+
+void USB_CMD_HANDLER()
+{
+	switch(XRAM_C6)
+	{
+		case 0x81://ROM_404
+			XRAM_8F_90=0xC00;
+			RAM_28=0;
+			
+			//GOTO ROM_40F
+			break;
+		case 0x82://ROM_413
+			if(RAM_28)
+			{
+				RAM_E=0;
+				
+				ROM_41A:
+				if(RAM_E-RAM_28<0)
+				{
+					ROM_7E6();
+					RAM_D=R7;
+					if(R7==0)
+					{
+						if(USB_DATA_FLAGS3!=0xAA)
+						{
+							RAM_E++;
+							goto ROM_41A;
+						}
+						ROM_62C();
+						RAM_D=R7;
+						XRAM_8F_90+=0x40;
+						if(R7==0)
+						{
+							RAM_E++;
+							goto ROM_41A;
+						}
+					}
+					//ROM_449
+					ROM_A84();
+				}
+				RAM_28=0;
+			}
+			//ROM_455
+			
+			break;
+		case 0x83://ROM_49E
+		//some_reset
+			break;
+		case 0x80://ROM_31D
+			RAM_F=0;
+			RAM_10=XRAM_C7;
+			if(RAM_F_10-0x3C<0)
+			{
+				RAM_E=RAM_10;
+				while(RAM_E<0x3C)
+				{
+					*(0xCA+RAM_E)=0;
+				}
+			}
+			if(RAM_28>=0xF)
+			{
+				//ROM_383
+				if(RAM_28!=0xF)
+					return;
+				
+			}
+			else
+			{
+				
+			}
+			break;
+		default://ROM_4B2
+			break;
+	}
+}
+
+void DoUSB()//ROM_80
+{
+	if(!___USB_INT_AVAIL)
+		return;
+	switch(USB_INT_ST & 0x3F)
+	{
+		case 0x00://EP0 OUT
+			break;
+		case 0x01://EP1 OUT ROM_E9
+			if(!U_TOG_OK)
+				break;
+			if(XRAM_200!=0x81)
+				break;
+			if(XRAM_201!=0xF)
+				break;
+			if(XRAM_202!=0x1)
+				break;
+			if(XRAM_203!=0x2)
+				break;
+			XRAM_240=0x82;
+			XRAM_241=0xF;
+			XRAM_242=0x1;
+			XRAM_243=0;
+			
+			FSR_UEP1_T_LEN=4;
+			FSR_UEP1_CTRL&=0xFC;
+			break;
+		case 0x02://EP2 OUT ROM_B0
+			if(!U_TOG_OK)
+				break;
+			USB_PKT_LEN=FSR_USB_RX_LEN;
+			
+			memcpy(XRAM_A,XRAM_C6,USB_PKT_LEN);	
+			
+			USB_DATA_FLAGS3=0x55;
+			USB_CMD_HANDLER();
+			USB_DATA_FLAGS3=0;
+			
+			break;
+		case 0x20://EP0 IN ROM_273
+			switch(XRAM_92_SetupReq)
+			{
+				case 5://ROM_2C7 //USB_SET_ADDRESS
+					FSR_UEP0_CTRL=0;
+					break;
+				case 6://27E //USB_GET_DESCRIPTOR
+					L=XRAM_91;
+					if(L<8)
+						L=8;
+					USB_PKT_LEN=L;
+					memcpy(sendbuf_ptr,0,USB_PKT_LEN);	
+					XRAM_91-=USB_PKT_LEN;
+					sendbuf_ptr+=USB_PKT_LEN;
+					FSR_UEP0_T_LEN=USB_PKT_LEN;
+					FSR_UEP0_CTRL^=0x40;
+					break;
+				default://2D5
+					FSR_UEP0_T_LEN=0;
+					FSR_UEP0_CTRL=0;
+					break;
+			}
+			break;
+		case 0x21://EP1 IN ROM_132
+			FSR_UEP1_CTRL=FSR_UEP1_CTRL & 0xFC | 2;
+			break;
+		case 0x22://EP2 IN ROM_DE
+			FSR_UEP2_CTRL=FSR_UEP2_CTRL & 0xFC | 2;
+			break;
+		case 0x30://SETUP ROM_13D
+			break;
+		default:
+			break;
+	}
+}
+
+void main()
+{
+	uint8_t RAM_89AB=0;
+	P1.6=1;
+	P1.7=1;
+	InitClock_48M()
+	delay_1s(5)
+	IE.EA=1
+//some init
+	InitUSB()
+	while()
+	{
+		FSR_WDOG_COUNT=0;
+		
+		DoUSB();
+		lcall   ROM_920
+
+		RAM_89AB++;
+		if(RAM_89AB==50000)
+		{
+			P1.7=!P1.7;
+			RAM_89AB=0;
+		}
+	}
+}
+
+
+char RAM_6E,RAM_70,RAM_5D;
+char XRAM_639;
+bit RAM_22.2;
+bit RAM_22.3;
+char XRAM_CA;
+char XRAM_180_RX_LEN;
+char RAM_5F_RX_LEN_EP1;
+char RAM_60_RX_LEN_EP1;
+
+void USB_Interrupt()
+{
+	if(USB_INT_FG.UIF_TRANSFER)
+	{
+		switch(USB_INT_ST & 0x3F)
+		{
+			case 0x00://EP0 OUT
+				XRAM_180_RX_LEN=USB_RX_LEN;
+				if(XRAM_CA==0x20 && USB_INT_FG.U_TOG_OK)
+				{
+				}
+				break;
+			case 0x01://EP1 OUT
+				break;
+			case 0x02://EP2 OUT
+				break;
+			case 0x03://EP3 OUT
+				break;
+			case 0x20://EP0 IN
+				break;
+			case 0x21://EP1 IN
+				break;
+			case 0x22://EP2 IN
+				break;
+			case 0x23://EP3 IN
+				break;
+			case 0x24://EP4 IN
+				break;
+			case 0x30://SETUP
+				break;
+			default:
+				break;
+		}
+	}
+	if(USB_INT_FG.UIF_DETECT)
+	{
+		UEP0_CTRL=2;
+		UEP2_CTRL=2;
+		UEP3_CTRL=2;
+		UEP4_CTRL=2;
+		
+		RAM_6E=0;
+		RAM_70=0;
+		RAM_5D=0;
+		XRAM_639=0;
+		RAM_22.2=0;
+
+		USB_DEV_AD=0;
+		USB_INT_FG.UIF_SUSPEND=0;
+		USB_INT_FG.UIF_TRANSFER=0;
+		USB_INT_FG.UIF_DETECT=0;
+	}
+	if(USB_INT_FG.UIF_SUSPEND)
+	{
+		USB_INT_FG.UIF_SUSPEND=0;
+	}
+	USB_INT_FG=0xFF;
+}
+
+
+
+void serint()
+{
+	if(SCON.RI)
+	{
+		SCON.RI=0;
+		
+	}
+	if(SCON.TI)
+	{
+		SCON.TI=0;
+		
+	}
+}
+
+//EP3:UART

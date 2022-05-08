@@ -1,0 +1,2 @@
+USB_DATA_FLAGS3.0 speed
+USB_DATA_FLAGS2.7 mode 0=arm 1=riscv

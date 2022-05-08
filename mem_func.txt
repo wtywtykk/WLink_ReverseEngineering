@@ -1,0 +1,108 @@
+//R1R2 Addr
+//R3 Type
+//R5 Set Val
+//R6R7 Size
+XRAM 0x SetTo L 7
+void ROM_3FA0_some_memset()
+{
+	if(R6 | R7)
+	{
+		if(R7)
+			R6++;
+		if(R3<>1)
+		{
+			BBBB=R1;
+			if(R3<1)
+			{
+				//3FBB
+				while(--R7)
+					*(R1++)=R5;
+			}
+			else
+			{
+				//2FC5
+				if(R3!=0xFE)
+					return;
+				while(--R7)
+					*(R1++)=R5;
+			}
+			R1=BBBB;
+		}
+		else
+		{
+			DPL=R1;
+			DPH=R2;
+		}
+	}
+}
+
+
+
+R7 LEN_L
+R6 LEN_H
+R5 DST_TYPE
+R4 DST_H
+R3 SRC_TYPE
+R2 SRC_H
+R1 SRC_L
+R0 DST_L
+
+-2 XRAM 1B
+-1 ROM
+0  RAM
+1  XRAM 2B
+
+void memcpy_1()
+{
+	if(R7)
+		R6++;
+	if(R7|R6)
+	{
+		BBBB=R0;
+		if(R5+2<4)
+		{
+			if(R3+2<4)
+			{
+				switch((R3+2)*4 + R5+2)
+				{
+					case 0://ROM_4DC
+						//XRAM to XRAM
+						while(R7--) *R0++=*R1++;
+						break;
+					case 1,5,9,13://ROM_506
+						break;
+					case 2://ROM_4D4
+						//XRAM TO RAM
+						while(R7--) *R0++=*R1++;
+						break;
+					case 3://ROM_4E4
+						//XRAM 1B TO XRAM2B
+						while(R7--) *(R0,R4)++=*R1++;
+						break;
+					case 4://ROM_57B
+						break;
+					case 6://ROM_549
+						break;
+					case 7://ROM_528
+						break;
+					case 8://ROM_4C0
+						break;
+					case 10://ROM_4B8
+						break;
+					case 11://ROM_4C8
+						break;
+					case 12://ROM_4FC
+						break;
+					case 14://ROM_4F0
+						break;
+					case 15://ROM_55B
+						break;
+				}
+			}
+		}
+	}
+	R2=R4
+	R1=R0
+	A=R5
+	R3=R5
+}
